@@ -41,26 +41,10 @@ class User < Player
   end
   
   def pick_tile(board, user_letter)
-    tile = get_user_tile
-    user_tile = valid_tile?(board, tile)
-    board.tiles[user_tile] = user_letter
-  end
-  
-  def valid_tile?(board, tile)
-    loop do
-      valid_tile = board.tile_one_thru_nine?(tile)
-      unplayed_tiles = board.tile_already_played?(tile)
-      break if valid_tile && unplayed_tiles
-      puts "Tile #{tile} is not between 1-9 or has already been played."
-      puts "Please enter a valid tile number:"
-      tile = gets.chomp.to_i
-    end
-    tile
-  end
-  
-  def get_user_tile
     puts "Which tile do you select?"
     tile = gets.chomp.to_i
+    user_tile = board.valid_tile?(tile)
+    board.tiles[user_tile] = user_letter
   end
 end
 
@@ -158,6 +142,18 @@ class Board
   
   def open_tiles?
     tiles.values.any? { |tile| tile == " " }
+  end
+  
+  def valid_tile?(tile)
+    loop do
+      valid_tile = tile_one_thru_nine?(tile)
+      unplayed_tiles = tile_already_played?(tile)
+      break if valid_tile && unplayed_tiles
+      puts "Tile #{tile} is not between 1-9 or has already been played."
+      puts "Please enter a valid tile number:"
+      tile = gets.chomp.to_i
+    end
+    tile
   end
   
   def tile_one_thru_nine?(tile)
