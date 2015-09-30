@@ -1,0 +1,56 @@
+get player name
+start game loop
+  - initialize game board
+  - get player letter
+  - start player/computer turns loop
+    - get player move
+      - check winner
+    - computer move
+      - check winner
+    - end turn loop if no winner and all squares filled
+  - play again?
+
+Get user name. Create playing board. get user letter. assign letter to user. assign letter to computer. user picks tile. check winner. computer picks tile. check winner. end game if all tiles filled and no winner.
+
+class Player
+  def get_letter
+    
+  end
+end
+
+class User
+  def get_name
+    
+  end
+  
+  def pick_tile
+    
+  end
+end
+
+class Computer
+  def pick_tile
+    
+  end
+end
+
+class Board
+  def initialize
+    
+  end
+  
+  def draw_board
+    
+  end
+  
+  def check_winner
+    
+  end
+  
+  def all_tiles_full?
+    
+  end
+end
+
+class PlayTTT
+end
