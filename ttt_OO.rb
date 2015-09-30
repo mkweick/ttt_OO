@@ -9,33 +9,11 @@ class Player
     "#{name} wins!"
   end
   
-  def valid_tile?(board)
-    puts "Which tile do you select?"
-    tile = gets.chomp.to_i
-    loop do
-      valid_tile = tile_one_thru_nine?(tile)
-      unplayed_tiles = tile_already_played?(board, tile)
-      break if valid_tile && unplayed_tiles
-      puts "Tile #{tile} is not between 1-9 or has already been played."
-      puts "Please enter a valid tile number:"
-      tile = gets.chomp.to_i
-    end
-    tile
-  end
-  
-  def tile_one_thru_nine?(tile)
-    (1..9).any? { |number| number == tile }
-  end
-
-  def tile_already_played?(board, tile)
-    %w(X O).none? { |letter| letter == board.tiles[tile] }
-  end
-  
   def wins?(board, letter)
     Board::WINNING_LINES.each do |line|
       return name if board.tiles.values_at(*line).count(letter) == 3
     end
-  nil
+    nil
   end
 end
 
@@ -55,7 +33,7 @@ class User < Player
     system 'clear'
     puts "Would you like to play as X's or O's? (X/O):"
     user_letter = gets.chomp.upcase
-    while ['X', 'O'].none? { |letter| letter == user_letter }
+    until %w(X O).include? user_letter
       puts "Invalid selection, select either 'X' or 'O' for your letter:"
       user_letter = gets.chomp.upcase
     end
@@ -63,8 +41,26 @@ class User < Player
   end
   
   def pick_tile(board, user_letter)
-    user_tile = valid_tile?(board)
+    tile = get_user_tile
+    user_tile = valid_tile?(board, tile)
     board.tiles[user_tile] = user_letter
+  end
+  
+  def valid_tile?(board, tile)
+    loop do
+      valid_tile = board.tile_one_thru_nine?(tile)
+      unplayed_tiles = board.tile_already_played?(tile)
+      break if valid_tile && unplayed_tiles
+      puts "Tile #{tile} is not between 1-9 or has already been played."
+      puts "Please enter a valid tile number:"
+      tile = gets.chomp.to_i
+    end
+    tile
+  end
+  
+  def get_user_tile
+    puts "Which tile do you select?"
+    tile = gets.chomp.to_i
   end
 end
 
@@ -80,22 +76,39 @@ class Computer < Player
   def pick_tile(board, comp_letter, user_letter)
     puts "Computer is thinking..."
     sleep 2
-    if Board::WINNING_LINES.any? do |two| 
-      board.tiles.values_at(*two).count(comp_letter) == 2 && 
-      board.tiles.values_at(*two).include?(" ")
-    end
+    if comp_two_in_row?(board, comp_letter)
       get_smart_tile(board, comp_letter, user_letter)
-    elsif Board::WINNING_LINES.any? do |two| 
-      board.tiles.values_at(*two).count(user_letter) == 2 && 
-      board.tiles.values_at(*two).include?(" ")
-    end
+    elsif user_two_in_row?(board, user_letter)
       get_smart_tile(board, user_letter, comp_letter, 1)
     else
       get_random_tile(board, comp_letter)
     end
   end
   
+  def comp_two_in_row?(board, comp_letter)
+    Board::WINNING_LINES.any? do |two| 
+      board.tiles.values_at(*two).count(comp_letter) == 2 && 
+      board.tiles.values_at(*two).include?(" ")
+    end
+  end
+  
+  def user_two_in_row?(board, user_letter)
+    Board::WINNING_LINES.any? do |two| 
+      board.tiles.values_at(*two).count(user_letter) == 2 && 
+      board.tiles.values_at(*two).include?(" ")
+    end
+  end
+  
   def get_smart_tile(board, letter1, letter2, marker = 0)
+    comp_tile = get_third_tile(board, letter1, letter2)
+    if marker == 0
+      board.tiles[comp_tile] = letter1
+    else
+      board.tiles[comp_tile] = letter2
+    end
+  end
+  
+  def get_third_tile(board, letter1, letter2)
     two_in_row = Board::WINNING_LINES.select do |two| 
       board.tiles.values_at(*two).count(letter1) == 2
     end
@@ -107,11 +120,6 @@ class Computer < Player
     third_tile = two_in_row_open.sample
     third_tiles = third_tile.select { |tile| " " == board.tiles[tile] }
     comp_tile = third_tiles.sample
-    if marker == 0
-      board.tiles[comp_tile] = letter1
-    else
-      board.tiles[comp_tile] = letter2
-    end
   end
 
   def get_random_tile(board, comp_letter)
@@ -151,13 +159,21 @@ class Board
   def open_tiles?
     tiles.values.any? { |tile| tile == " " }
   end
+  
+  def tile_one_thru_nine?(tile)
+    (1..9).any? { |number| number == tile }
+  end
+
+  def tile_already_played?(tile)
+    %w(X O).none? { |letter| letter == tiles[tile] }
+  end
 end
 
 class PlayTTT
   attr_reader :user, :computer, :board
   
   def initialize
-    @user = User.new("")
+    @user = User.allocate
     @computer = Computer.new("Computer")
   end
   
@@ -169,6 +185,27 @@ class PlayTTT
     play_again
   end
   
+  def game_loop(board, user_letter, comp_letter)
+    loop do
+      user.pick_tile(board, user_letter)
+      board.draw_board
+      if user.wins?(board, user_letter)
+        puts user
+        break
+      elsif board.open_tiles?
+        computer.pick_tile(board, comp_letter, user_letter)
+        board.draw_board
+        if computer.wins?(board, comp_letter)
+          puts computer
+          break
+        end
+      else
+        puts "It's a tie."
+        break
+      end
+    end
+  end
+  
   def play
     user.get_name
     begin
@@ -176,24 +213,7 @@ class PlayTTT
       user.get_letter
       computer.get_letter(user.letter)
       board.draw_example_board
-      loop do
-        user.pick_tile(board, user.letter)
-        board.draw_board
-        if user.wins?(board, user.letter)
-          puts user
-          break
-        elsif board.open_tiles?
-          computer.pick_tile(board, computer.letter, user.letter)
-          board.draw_board
-          if computer.wins?(board, computer.letter)
-            puts computer
-            break
-          end
-        else
-          puts "It's a tie."
-          break
-        end
-      end
+      game_loop(board, user.letter, computer.letter)
     end until play_again? == 'N'
   end
 end
