@@ -60,25 +60,18 @@ class Computer < Player
   def pick_tile(board, comp_letter, user_letter)
     puts "Computer is thinking..."
     sleep 2
-    if comp_two_in_row?(board, comp_letter)
+    if two_in_row?(board, comp_letter)
       get_smart_tile(board, comp_letter, user_letter)
-    elsif user_two_in_row?(board, user_letter)
+    elsif two_in_row?(board, user_letter)
       get_smart_tile(board, user_letter, comp_letter, 1)
     else
       get_random_tile(board, comp_letter)
     end
   end
   
-  def comp_two_in_row?(board, comp_letter)
+  def two_in_row?(board, letter)
     Board::WINNING_LINES.any? do |two| 
-      board.tiles.values_at(*two).count(comp_letter) == 2 && 
-      board.tiles.values_at(*two).include?(" ")
-    end
-  end
-  
-  def user_two_in_row?(board, user_letter)
-    Board::WINNING_LINES.any? do |two| 
-      board.tiles.values_at(*two).count(user_letter) == 2 && 
+      board.tiles.values_at(*two).count(letter) == 2 && 
       board.tiles.values_at(*two).include?(" ")
     end
   end
